@@ -376,6 +376,9 @@ Find a text string.
 .B control-G
 Find next occurrence.
 .TP
+.B control-V
+Find previous occurrence.
+.TP
 .B control-P
 Print.
 .TP
@@ -754,6 +757,9 @@ as if it had been entered in the 'find' dialog.
 .B findNext
 Finds the next occurrence of the search string (no dialog).
 .TP
+.B findPrev
+Finds the previous occurrence of the search string (no dialog).
+.TP
 .B print
 Open the 'print' dialog.
 .TP
@@ -839,6 +845,7 @@ The default key bindings are as follows:
     bind ctrl-f         any         find
     bind /              any         find
     bind ctrl-g         any         findNext
+    bind ctrl-v         any         findPrev
     bind ctrl-p         any         print
     bind n              scrLockOff  nextPage
     bind N              scrLockOff  nextPage

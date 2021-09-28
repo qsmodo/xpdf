@@ -173,6 +173,7 @@ XPDFViewerCmd XPDFViewer::cmdTab[] = {
   { "endSelection",            0, true,  true,  &XPDFViewer::cmdEndSelection },
   { "find",                    0, true,  false, &XPDFViewer::cmdFind },
   { "findNext",                0, true,  false, &XPDFViewer::cmdFindNext },
+  { "findPrev",                0, true,  false, &XPDFViewer::cmdFindPrev },
   { "focusToDocWin",           0, false, false, &XPDFViewer::cmdFocusToDocWin },
   { "focusToPageNum",          0, false, false, &XPDFViewer::cmdFocusToPageNum },
   { "followLink",              0, true,  true,  &XPDFViewer::cmdFollowLink },
@@ -784,8 +785,12 @@ void XPDFViewer::cmdFind(const CmdList& args, XEvent *event) {
   mapFindDialog();
 }
 
+void XPDFViewer::cmdFindPrev(const CmdList& args, XEvent *event) {
+  doFind(true, 1);
+}
+
 void XPDFViewer::cmdFindNext(const CmdList& args, XEvent *event) {
-  doFind(true);
+  doFind(true, 0);
 }
 
 void XPDFViewer::cmdFocusToDocWin(const CmdList& args, XEvent *event) {
@@ -2943,28 +2948,10 @@ void XPDFViewer::initFindDialog() {
   XtAddCallback(closeBtn, XmNactivateCallback,
 		&findCloseCbk, (XtPointer)this);
 
-  //----- checkboxes
+  //----- case sensitiveness checkbox
   n = 0;
   XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNleftOffset, 4); ++n;
-  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNbottomWidget, okBtn); ++n;
-  XtSetArg(args[n], XmNindicatorType, XmN_OF_MANY); ++n;
-#if XmVERSION <= 1
-  XtSetArg(args[n], XmNindicatorOn, True); ++n;
-#else
-  XtSetArg(args[n], XmNindicatorOn, XmINDICATOR_FILL); ++n;
-#endif
-  XtSetArg(args[n], XmNset, XmUNSET); ++n;
-  s = XmStringCreateLocalized("Search backward");
-  XtSetArg(args[n], XmNlabelString, s); ++n;
-  findBackwardToggle = XmCreateToggleButton(findDialog, "backward", args, n);
-  XmStringFree(s);
-  XtManageChild(findBackwardToggle);
-  n = 0;
-  XtSetArg(args[n], XmNleftAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNleftWidget, findBackwardToggle); ++n;
-  XtSetArg(args[n], XmNleftOffset, 16); ++n;
+  XtSetArg(args[n], XmNleftOffset, 2); ++n;
   XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
   XtSetArg(args[n], XmNbottomWidget, okBtn); ++n;
   XtSetArg(args[n], XmNindicatorType, XmN_OF_MANY); ++n;
@@ -2980,33 +2967,13 @@ void XPDFViewer::initFindDialog() {
       XmCreateToggleButton(findDialog, "matchCase", args, n);
   XmStringFree(s);
   XtManageChild(findCaseSensitiveToggle);
-  n = 0;
-  XtSetArg(args[n], XmNleftAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNleftWidget, findCaseSensitiveToggle); ++n;
-  XtSetArg(args[n], XmNleftOffset, 16); ++n;
-  XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNrightOffset, 4); ++n;
-  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNbottomWidget, okBtn); ++n;
-  XtSetArg(args[n], XmNindicatorType, XmN_OF_MANY); ++n;
-#if XmVERSION <= 1
-  XtSetArg(args[n], XmNindicatorOn, True); ++n;
-#else
-  XtSetArg(args[n], XmNindicatorOn, XmINDICATOR_FILL); ++n;
-#endif
-  XtSetArg(args[n], XmNset, XmUNSET); ++n;
-  s = XmStringCreateLocalized("Whole words only");
-  XtSetArg(args[n], XmNlabelString, s); ++n;
-  findWholeWordToggle = XmCreateToggleButton(findDialog, "wholeWord", args, n);
-  XmStringFree(s);
-  XtManageChild(findWholeWordToggle);
 
   //----- search string entry
   n = 0;
   XtSetArg(args[n], XmNtopAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNtopOffset, 4); ++n;
   XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNbottomWidget, findBackwardToggle); ++n;
+  XtSetArg(args[n], XmNbottomWidget, findCaseSensitiveToggle); ++n;
   XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNleftOffset, 2); ++n;
   XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
@@ -3049,7 +3016,8 @@ void XPDFViewer::findFindCbk(Widget widget, XtPointer ptr,
 			     XtPointer callData) {
   XPDFViewer *viewer = (XPDFViewer *)ptr;
 
-  viewer->doFind(false);
+  viewer->doFind(false, 0);
+  XtUnmanageChild(viewer->findDialog);
 }
 
 void XPDFViewer::mapFindDialog() {
@@ -3059,15 +3027,15 @@ void XPDFViewer::mapFindDialog() {
   XtManageChild(findDialog);
 }
 
-void XPDFViewer::doFind(bool next) {
+void XPDFViewer::doFind(bool next, int backward) {
   if (XtWindow(findDialog)) {
     XDefineCursor(display, XtWindow(findDialog), core->getBusyCursor());
   }
   core->find(XmTextFieldGetString(findText),
 	     XmToggleButtonGetState(findCaseSensitiveToggle),
 	     next,
-	     XmToggleButtonGetState(findBackwardToggle),
-	     XmToggleButtonGetState(findWholeWordToggle),
+	     backward,
+	     0,
 	     false);
   if (XtWindow(findDialog)) {
     XUndefineCursor(display, XtWindow(findDialog));

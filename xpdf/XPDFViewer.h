@@ -124,6 +124,7 @@ private:
   void cmdEndSelection(const CmdList& args, XEvent *event);
   void cmdFind(const CmdList& args, XEvent *event);
   void cmdFindNext(const CmdList& args, XEvent *event);
+  void cmdFindPrev(const CmdList& args, XEvent *event);
   void cmdFocusToDocWin(const CmdList& args, XEvent *event);
   void cmdFocusToPageNum(const CmdList& args, XEvent *event);
   void cmdFollowLink(const CmdList& args, XEvent *event);
@@ -284,7 +285,7 @@ private:
   static void findFindCbk(Widget widget, XtPointer ptr,
 			  XtPointer callData);
   void mapFindDialog();
-  void doFind(bool next);
+  void doFind(bool next, int backward);
   static void findCloseCbk(Widget widget, XtPointer ptr,
 			   XtPointer callData);
 
@@ -366,9 +367,7 @@ private:
 
   Widget findDialog;
   Widget findText;
-  Widget findBackwardToggle;
   Widget findCaseSensitiveToggle;
-  Widget findWholeWordToggle;
 
   Widget saveAsDialog;
 

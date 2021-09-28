@@ -257,6 +257,8 @@ void XPDFParams::createDefaultKeyBindings() {
                            xpdfKeyContextAny, "find");
   keyBindings.emplace_back('g', xpdfKeyModCtrl,
                            xpdfKeyContextAny, "findNext");
+  keyBindings.emplace_back('v', xpdfKeyModCtrl,
+                           xpdfKeyContextAny, "findPrev");
   keyBindings.emplace_back('p', xpdfKeyModCtrl,
                            xpdfKeyContextAny, "print");
   keyBindings.emplace_back('n', xpdfKeyModNone,

@@ -11,4 +11,4 @@ missing
 *.tar.gz
 *.o
 tags
-
+.*
