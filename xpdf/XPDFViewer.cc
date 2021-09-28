@@ -1485,32 +1485,20 @@ void XPDFViewer::initWindow(bool fullScreen) {
 
   // set traversal order
   XtVaSetValues(core->getDrawAreaWidget(),
-		XmNnavigationType, XmEXCLUSIVE_TAB_GROUP, NULL);
+		XmNnavigationType, XmTAB_GROUP, NULL);
   if (toolBar != None) {
-    XtVaSetValues(backBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(prevTenPageBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(prevPageBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(nextPageBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(nextTenPageBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(forwardBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(pageNumText, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(zoomWidget, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(findBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(printBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(aboutBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
-    XtVaSetValues(quitBtn, XmNnavigationType, XmEXCLUSIVE_TAB_GROUP,
-		  NULL);
+    XtVaSetValues(backBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(prevTenPageBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(prevPageBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(nextPageBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(nextTenPageBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(forwardBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(pageNumText, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(zoomWidget, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(findBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(printBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(aboutBtn, XmNnavigationType, XmTAB_GROUP, NULL);
+    XtVaSetValues(quitBtn, XmNnavigationType, XmTAB_GROUP, NULL);
   }
 
   initPopupMenu();
@@ -2928,6 +2916,7 @@ void XPDFViewer::initFindDialog() {
 
   //----- "find" and "close" buttons
   n = 0;
+  XtSetArg(args[n], XmNtraversalOn, false); ++n;
   XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNleftOffset, 4); ++n;
   XtSetArg(args[n], XmNbottomAttachment, XmATTACH_FORM); ++n;
@@ -2938,6 +2927,7 @@ void XPDFViewer::initFindDialog() {
   XtAddCallback(okBtn, XmNactivateCallback,
 		&findFindCbk, (XtPointer)this);
   n = 0;
+  XtSetArg(args[n], XmNtraversalOn, false); ++n;
   XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNrightOffset, 4); ++n;
   XtSetArg(args[n], XmNbottomAttachment, XmATTACH_FORM); ++n;
