@@ -1,0 +1,14 @@
+autom4te.cache/*
+xpdf/xpdf
+Makefile
+Makefile.in
+aclocal.m4
+config.*
+configure
+depcomp
+install-sh
+missing
+*.tar.gz
+*.o
+tags
+

@@ -1,0 +1,419 @@
+#!/usr/bin/python3
+# Check that xpopple's code and documentation are consistent.
+
+import os
+import re
+import subprocess
+import sys
+
+testdir = "testdata"
+old_versions = ("3.03", "3.04")
+
+# Check we're in the right dir
+assert os.path.exists("test-options")
+
+# Download the old source if it's not already there
+old_srcdirs = {}
+for version in old_versions:
+    distfile = "xpdf-" + version + ".tar.gz"
+    tarball = os.path.join(testdir, "archives", distfile)
+    srcdir = os.path.join(testdir, "src", "xpdf-" + version)
+    old_srcdirs[version] = srcdir
+
+    os.makedirs(os.path.dirname(tarball), exist_ok=True)
+    if not os.path.exists(tarball):
+        subprocess.check_call(["wget", "-O", tarball,
+                               "https://dl.xpdfreader.com/old/" + distfile])
+
+    os.makedirs(os.path.dirname(srcdir), exist_ok=True)
+    if not os.path.exists(srcdir):
+        subprocess.check_call(["tar", "-C", os.path.dirname(srcdir),
+                               "-xf", tarball])
+
+class XPDFTree:
+    """Information extracted from an Xpdf/xpopple source tree."""
+
+    def __init__(self, dirname):
+        self.dirname = dirname
+
+        # Command-line option arguments
+        self.code_args = set()
+        self.code_args_obsolete = set()
+        self.man_args = set()
+        self.man_args_obsolete = set()
+
+        # X resources
+        self.code_resources = set()
+        self.man_resources = set()
+
+        # Config file options
+        self.code_config = set()
+        self.code_config_obsolete = set()
+        self.man_config = set()
+        self.man_config_obsolete = set()
+
+        # Remote commands
+        self.code_commands = set()
+        self.man_commands = set()
+
+        # Key bindings (only, since these are documented individually)
+        self.code_keys = set()
+        self.man_keys = set()
+
+        # Default bindings
+        self.code_bindings = set()
+        self.man_bindings = set()
+
+        self.read_xpdf_code()
+        self.read_app_code()
+        self.read_params_code()
+        self.read_viewer_code()
+        self.read_xpdf_man()
+        self.read_xpdfrc_man()
+
+        # code_keys are just the keys that have something bound to them
+        for binding in self.code_bindings:
+            key = binding.split()[1]
+            if not key.startswith("mouse"):
+                self.code_keys.add(key)
+
+    # Each of these read_ methods is a little state machine that identifies and
+    # searches the relevant sections of a source file or man page. It's not a
+    # proper parser but it'll do the job!
+
+    def read_xpdf_code(self):
+        with open(os.path.join(self.dirname, "xpdf", "xpdf.cc")) as f:
+            state = "before"
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'argDesc\[\] =', line):
+                        state = "tab"
+
+                elif state == "tab":
+                    m = re.search(r'^ *{ *"([^"]*)", *([^ ,]*)', line)
+                    if m:
+                        if m.group(2).startswith("argObsolete"):
+                            self.code_args_obsolete.add(m.group(1))
+                        else:
+                            self.code_args.add(m.group(1))
+                    if re.search(r'^}', line):
+                        break
+
+        assert self.code_args != set()
+        # Old versions didn't handle obsolete args
+        if self.dirname == ".":
+            assert self.code_args_obsolete != set()
+
+    def read_app_code(self):
+        args = set()
+
+        with open(os.path.join(self.dirname, "xpdf", "XPDFApp.cc")) as f:
+            state = "before"
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'xOpts\[\] =', line):
+                        state = "tab"
+                    if re.search(r'xResources\[\] =', line):
+                        state = "resources"
+
+                elif state == "tab":
+                    m = re.search(r'^ *{ *"([^"]*)", *"[.*]*([^"]*)",', line)
+                    if m:
+                        args.add(m.group(1))
+                        self.code_resources.add(m.group(2))
+                    if re.search(r'^}', line):
+                        state = "before"
+
+                elif state == "resources":
+                    m = re.search(r'^ *{ *"([^"]*)",', line)
+                    if m:
+                        self.code_resources.add(m.group(1))
+                    if re.search(r'^}', line):
+                        state = "before"
+
+        assert args != set()
+        self.code_args.update(args)
+        assert self.code_resources != set()
+
+    def read_params_code(self):
+        fn = os.path.join(self.dirname, "xpdf", "XPDFParams.cc")
+        if not os.path.exists(fn):
+            fn = os.path.join(self.dirname, "xpdf", "GlobalParams.cc")
+
+        with open(fn) as f:
+            state = "before"
+            lines = ""
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'::createDefaultKeyBindings', line):
+                        state = "bindings"
+                    if re.search(r'::parseLine', line):
+                        state = "config"
+
+                elif state == "bindings":
+                    # Bindings are broken across multiple lines.
+                    if re.search(r'^ *//', line):
+                        pass
+                    elif re.search(r'^}', line):
+                        state = "before"
+                    else:
+                        lines += " " + line
+                        if re.search(r';$', lines):
+                            m = re.search(r'(?:new KeyBinding|emplace_back)\((.*")\)', lines)
+                            if m:
+                                binding = convert_binding(m.group(1))
+                                self.code_bindings.add(binding)
+                            lines = ""
+
+                elif state == "config":
+                    for s in re.findall(r'(?:cmd->cmp\(|cmd == )"([^"]*)"', line):
+                        self.code_config.add(s)
+                    if re.search(r'error.*Unknown config file command', line):
+                        state = "obsolete"
+
+                elif state == "obsolete":
+                    for s in re.findall(r'(?:cmd->cmp\(|cmd == )"([^"]*)"', line):
+                        self.code_config_obsolete.add(s)
+                    if re.search(r'^\}', line):
+                        state = "before"
+
+        assert self.code_config != set()
+        assert self.code_config_obsolete != set()
+
+    def read_viewer_code(self):
+        with open(os.path.join(self.dirname, "xpdf", "XPDFViewer.cc")) as f:
+            state = "before"
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'::cmdTab\[\] =', line):
+                        state = "tab"
+
+                elif state == "tab":
+                    m = re.search(r'^ *{ *"([^"]*)",', line)
+                    if m:
+                        self.code_commands.add(m.group(1))
+                    if re.search(r'^}', line):
+                        break
+
+        assert self.code_commands != set()
+
+    def read_xpdf_man(self):
+        with open(os.path.join(self.dirname, "doc", "xpdf.1")) as f:
+            state = "before"
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'^\.SH OPTIONS', line):
+                        state = "args"
+                    if re.search(r'^\.SS Key bindings', line):
+                        state = "keys"
+                    if re.search(r'^\.SH COMMANDS', line):
+                        state = "commands"
+
+                elif state == "args":
+                    m = re.search(r'^(?:\.BI?|\.RB \() \\(-[^ ]*)', line)
+                    if m:
+                        self.man_args.add(m.group(1).replace('\\', ''))
+                    m = re.search(r'config file: " ([^ ]*)', line)
+                    if m:
+                        self.man_config.add(m.group(1))
+                    m = re.search(r'(?:X resource: "|^\.B) [Xx]pdf[.*]([^ ]*)', line)
+                    # toolTipEnable is handled by Motif.
+                    if m and m.group(1) != "toolTipEnable":
+                        self.man_resources.add(m.group(1))
+                    if re.search(r'^\.SH OBSOLETE OPTIONS', line):
+                        state = "obsolete"
+                    elif re.search(r'^\.SH', line):
+                        state = "before"
+
+                elif state == "obsolete":
+                    m = re.search(r'^(?:\.BI?|\.RB \() \\(-[^ ]*)', line)
+                    if m:
+                        self.man_args_obsolete.add(m.group(1).replace('\\', ''))
+                    if re.search(r'^\.SH', line):
+                        state = "before"
+
+                elif state == "keys":
+                    m = re.search(r'^\.BR? (.*)$', line)
+                    if m:
+                        for key in m.group(1).split(' " or " '):
+                            # Convert the key name to bind command form
+                            if key.startswith("control-"):
+                                key = "ctrl-" + key[8:]
+                            i = key.find("<")
+                            if i != -1:
+                                key = key[:i] + key[i + 1:-1]
+                            key = key.lower()
+                            if key == "pagedown":
+                                key = "pgdn"
+                            if key == "pageup":
+                                key = "pgup"
+                            if key == "arrows":
+                                for key in ("up", "down", "left", "right"):
+                                    self.man_keys.add(key)
+                            else:
+                                self.man_keys.add(key)
+                                if len(key) == 1:
+                                    # Letters should be accepted in
+                                    # both lower and upper case
+                                    self.man_keys.add(key.upper())
+                    if re.search(r'^\.SH', line):
+                        state = "before"
+
+                elif state == "commands":
+                    m = re.search(r'^\.BI? ([^ (]*)', line)
+                    if m:
+                        self.man_commands.add(m.group(1))
+                    if re.search(r'^\.SS Default Bindings', line):
+                        state = "bindings"
+
+                elif state == "bindings":
+                    m = re.search(r'^ *(bind .*)$', line)
+                    if m:
+                        binding = m.group(1)
+                        binding = binding.replace("\\&", "")
+                        binding = re.sub(r' +', r' ', binding)
+                        self.man_bindings.add(binding)
+                    if re.search(r'Previous versions of xpdf', line):
+                        state = "before"
+
+        assert self.man_args != set()
+        assert self.man_resources != set()
+        assert self.man_commands != set()
+        assert self.man_config != set()
+        assert self.man_keys != set()
+        assert self.man_bindings != set()
+
+    def read_xpdfrc_man(self):
+        config = set()
+
+        with open(os.path.join(self.dirname, "doc", "xpdfrc.5")) as f:
+            state = "before"
+            for line in f.readlines():
+                line = line.rstrip()
+
+                if state == "before":
+                    if re.search(r'^The following sections list all', line):
+                        state = "config"
+
+                elif state == "config":
+                    m = re.search(r'^\.B[IR]? ([^ ]*)', line)
+                    if m and m.group(1) != "xpdf":
+                        config.add(m.group(1))
+                    if re.search(r'^\.SH OBSOLETE CONFIG', line):
+                        state = "obsolete"
+                    if re.search(r'^\.SH EXAMPLES', line):
+                        break
+
+                elif state == "obsolete":
+                    m = re.search(r'^\.B[IR]? ([^ ]*)', line)
+                    if m:
+                        self.man_config_obsolete.add(m.group(1))
+                    if re.search(r'^\.SH EXAMPLES', line):
+                        break
+
+        assert config != set()
+        self.man_config.update(config)
+        # Old versions didn't list obsolete options
+        if self.dirname == ".":
+            assert self.man_config_obsolete != set()
+
+def convert_binding(arg_string):
+    """Convert KeyBinding constructor args to a bind command."""
+    args = [arg.strip() for arg in arg_string.split(",")]
+
+    def lower_first(s):
+        return s[:1].lower() + s[1:]
+    def unquote(s, quote):
+        assert s[0] == quote and s[-1] == quote
+        return s[1:-1]
+
+    cmd = ["bind"]
+
+    if args[0].startswith("xpdfKeyCode"):
+        key = lower_first(args[0][11:])
+        if key in ("pgUp", "pgDn"):
+            key = key.lower()
+    else:
+        key = unquote(args[0], "'")
+        if key == " ":
+            key = "space"
+
+    assert args[1].startswith("xpdfKeyMod")
+    mod = lower_first(args[1][10:])
+    if mod != "none":
+        key = mod + "-" + key
+    cmd.append(key)
+
+    assert args[2].startswith("xpdfKeyContext")
+    cmd.append(lower_first(args[2][14:]))
+
+    for arg in args[3:]:
+        cmd.append(unquote(arg, '"'))
+
+    return " ".join(cmd)
+
+rc = 0
+def warn(*s):
+    """Complain about something and ensure we exit non-zero."""
+    print(*s, file=sys.stderr)
+    global rc
+    rc = 1
+
+# The lists of documentable things we've gathered above
+item_types = {
+    "args": "Command-line arg",
+    "args_obsolete": "Obsolete command-line arg",
+    "resources": "X resource",
+    "config": "Config file option",
+    "config_obsolete": "Obsolete config file option",
+    "commands": "Command",
+    "keys": "Key",
+    "bindings": "Default binding",
+    }
+
+# Check current documentation is consistent with code
+current = XPDFTree(".")
+for item_type, desc in sorted(item_types.items()):
+    from_code = getattr(current, "code_" + item_type)
+    from_man = getattr(current, "man_" + item_type)
+    for item in sorted(from_code):
+        if not item in from_man:
+            warn(desc + " in code but not man:", item)
+    for item in sorted(from_man):
+        if not item in from_code:
+            warn(desc + " in man but not code:", item)
+
+# We don't care about bindings being to the same commands as older versions;
+# checking keys will tell us if any have been removed.
+del item_types["bindings"]
+
+# Check code is consistent with older versions of the code
+all_items = {}
+for version, srcdir in old_srcdirs.items():
+    old = XPDFTree(srcdir)
+    for item_type, desc in item_types.items():
+        from_old = all_items.setdefault(item_type, set())
+        from_old.update(getattr(old, "code_" + item_type))
+for item_type, desc in item_types.items():
+    if item_type.endswith("_obsolete"):
+        continue
+    from_code = getattr(current, "code_" + item_type)
+    from_obsolete = getattr(current, "code_" + item_type + "_obsolete", set())
+    from_old = all_items[item_type]
+    for item in sorted(from_old):
+        # Each item must either be implemented, or be documented as obsolete
+        # (and we checked the documentation matched the code above)
+        if not (item in from_code or item in from_obsolete):
+            warn(desc + " in old code but not current code:", item)
+
+sys.exit(rc)

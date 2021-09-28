@@ -1,0 +1,473 @@
+.\" Copyright 2002-2014 Glyph & Cog, LLC
+.\" Copyright 2014-2020 Adam Sampson <ats@offog.org>
+.TH xpdfrc 5 "24 Dec 2020"
+.SH NAME
+xpdfrc \- configuration file for xpdf (xpopple)
+.SH DESCRIPTION
+The xpdf program reads a single configuration file.  If you have a
+.I .xpdfrc
+file in your home directory, it will be read.  Otherwise, a
+system-wide configuration file will be read from
+.IR /etc/xpdf/xpdfrc ,
+if it exists.  (This is its default location; depending on build
+options, it may be placed elsewhere.)
+.PP
+The xpdfrc file consists of a series of configuration options, one
+per line.  Blank lines and lines starting with a \'#' (comments) are
+ignored.
+.PP
+Arguments may be quoted, using "double-quote" characters, e.g., for
+file names that contain spaces.
+.PP
+The following sections list all of the configuration options, sorted
+into functional groups.  There is an examples section at the end.
+.PP
+Note that all settings are case-sensitive; in particular, boolean options
+are "yes" and "no" (rather than "Yes" or "No").
+.SH INCLUDE FILES
+.TP
+.BI include " config\-file"
+Includes the specified config file.  The effect of this is equivalent
+to inserting the contents of
+.I config\-file
+directly into the parent config file in place of the
+.I include
+command.  Config files can be nested arbitrarily deeply.
+.SH GENERAL FONT CONFIGURATION
+.TP
+.BI fontFile " PDF\-font\-name font\-file"
+Maps a PDF font,
+.IR PDF\-font\-name ,
+to a font for display or PostScript output.  The font file,
+.IR font\-file ,
+can be any type allowed in a PDF file.  This command can be used for
+8-bit or 16-bit (CID) fonts.
+.SH POSTSCRIPT CONTROL
+.TP
+.BI psPaperSize " width(pts) height(pts)"
+Sets the paper size for PostScript output.  The
+.I width
+and
+.I height
+parameters give the paper size in PostScript points (1 point = 1/72
+inch).
+.TP
+.BR psPaperSize " letter | legal | A4 | A3 | match"
+Sets the paper size for PostScript output to a standard size.  The
+default paper size is set when xpdf and pdftops are built, typically
+to "letter" or "A4".  This can also be set to "match", which will set
+the paper size to match the size specified in the PDF file.
+.TP
+.BR psImageableArea " llx lly urx ury"
+Sets the imageable area for PostScript output.  The four integers are
+the coordinates of the lower-left and upper-right corners of the
+imageable region, specified in points (with the origin being the
+lower-left corner of the paper).  This defaults to the full paper
+size; the psPaperSize option will reset the imageable area
+coordinates.
+.TP
+.BR psCrop " yes | no"
+If set to "yes", PostScript output is cropped to the CropBox specified
+in the PDF file; otherwise no cropping is done.  This defaults to
+"yes".
+.TP
+.BR psExpandSmaller " yes | no"
+If set to "yes", PDF pages smaller than the PostScript imageable area
+are expanded to fill the imageable area.  Otherwise, no scalling is
+done on smaller pages.  This defaults to "no".
+.TP
+.BR psShrinkLarger " yes | no"
+If set to yes, PDF pages larger than the PostScript imageable area are
+shrunk to fit the imageable area.  Otherwise, no scaling is done on
+larger pages.  This defaults to "yes".
+.TP
+.BR psDuplex " yes | no"
+If set to "yes", the generated PostScript will set the "Duplex"
+pagedevice entry.  This tells duplex-capable printers to enable
+duplexing.  This defaults to "no".
+.TP
+.BR psLevel " level1 | level1sep | level2 | level2sep | level3 | level3Sep"
+Sets the PostScript level to generate.  This defaults to "level2".
+.TP
+.BI psFile " file\-or\-command"
+Sets the default PostScript file or print command for xpdf.  Commands
+start with a \'|' character; anything else is a file.  If the file
+name or command contains spaces it must be quoted.  This defaults to
+unset, which tells xpdf to generate a name of the form <file>.ps for a
+PDF file <file>.pdf.
+.SH TEXT CONTROL
+.TP
+.BI textEncoding " encoding\-name"
+Sets the encoding to use for text output.  (This can be overridden
+with the "\-enc" switch on the command line.)  The
+.I encoding\-name
+must be defined with the unicodeMap command (see above).  This
+defaults to "Latin1".
+.SH MISCELLANEOUS SETTINGS
+.TP
+.BR initialZoom " \fIpercentage\fR | page | width | height"
+Sets the initial zoom factor.  A number specifies a zoom percentage,
+where 100 means 72 dpi.  You may also specify \'page', to fit the page
+to the window size, \'width', to fit the page width to the window width,
+or \'height', to fit the page height to the window height.
+.TP
+.BR continuousView " yes | no"
+If set to "yes", xpdf will start in continuous view mode, i.e., with
+one vertical screoll bar for the whole document.  This defaults to
+"no".
+.TP
+.BI overprintPreview " yes | no"
+If set to "yes", generate overprint preview output, honoring the
+OP/op/OPM settings in the PDF file.  Ignored for non-CMYK output.  The
+default value is "no".
+.TP
+.BI launchCommand " command"
+Sets the command executed when you click on a "launch"\-type link.  The
+intent is for the command to be a program/script which determines the
+file type and runs the appropriate viewer.  The command line will
+consist of the file to be launched, followed by any parameters
+specified with the link.  Do not use "%s" in "command".  By default,
+this is unset, and Xpdf will simply try to execute the file (after
+prompting the user).
+.TP
+.BI urlCommand " command"
+Sets the command executed when you click on a URL link.  The string
+"%s" will be replaced with the URL.  (See the example below.)  This
+has no default value.
+.TP
+.BI movieCommand " command"
+Sets the command executed when you click on a movie annotation.  The
+string "%s" will be replaced with the movie file name.  This has no
+default value.
+.TP
+.BI bind " modifiers-key context command ..."
+Add a key or mouse button binding.
+.I Modifiers
+can be zero or more of:
+.nf
+
+    shift-
+    ctrl-
+    alt-
+
+.fi
+.I Key
+can be a regular ASCII character, or any one of:
+.nf
+
+    space
+    tab
+    return
+    enter
+    backspace
+    insert
+    delete
+    home
+    end
+    pgup
+    pgdn
+    left / right / up / down        (arrow keys)
+    f1 .. f35                       (function keys)
+    mousePress1 .. mousePress7      (mouse buttons)
+    mouseRelease1 .. mouseRelease7  (mouse buttons)
+
+.fi
+.I Context
+is either "any" or a comma-separated combination of:
+.nf
+
+    fullScreen / window       (full screen mode on/off)
+    continuous / singlePage   (continuous mode on/off)
+    overLink / offLink        (mouse over link or not)
+    scrLockOn / scrLockOff    (scroll lock on/off)
+
+.fi
+The context string can include only one of each pair in the above
+list.
+
+.I Command
+is an Xpdf command (see the COMMANDS section of the
+.BR xpdf (1)
+man page for details).  Multiple commands are separated by whitespace.
+
+The bind command replaces any existing binding, but only if it was
+defined for the exact same modifiers, key, and context.  All tokens
+(modifiers, key, context, commands) are case-sensitive.
+
+Example key bindings:
+.nf
+
+    # bind ctrl-a in any context to the nextPage
+    # command
+    bind ctrl-a any nextPage
+
+    # bind uppercase B, when in continuous mode
+    # with scroll lock on, to the reload command
+    # followed by the prevPage command
+    bind B continuous,scrLockOn reload prevPage
+
+.fi
+See the
+.BR xpdf (1)
+man page for more examples.
+.TP
+.BI unbind " modifiers-key context"
+Removes a key binding established with the bind command.  This is most
+useful to remove default key bindings before establishing new ones
+(e.g., if the default key binding is given for "any" context, and you
+want to create new key bindings for multiple contexts).
+.TP
+.BI printCommands " yes | no"
+If set to "yes", drawing commands are printed as they're executed
+(useful for debugging).  This defaults to "no".
+.TP
+.BI errQuiet " yes | no"
+If set to "yes", this suppresses all error and warning messages from
+all of the Xpdf tools.  This defaults to "no".
+.SH OBSOLETE CONFIGURATION OPTIONS
+The following options were accepted by earlier versions of Xpdf but are no
+longer allowed.  In most cases, this is because they control rendering options
+that Poppler does not support, or they were only used by tools other than Xpdf
+itself.
+.TP
+.BR antialias " yes | no"
+Obsolete.  Controlled the use of font anti-aliasing in the PDF rasterizer.
+.TP
+.BR antialiasPrinting " yes | no"
+Obsolete.  Controlled the use of font anti-aliasing when printing.
+.TP
+.B cidToUnicode
+Obsolete.  Specified a file with the mapping from character collection to
+Unicode.
+.TP
+.BI cMapDir " registry\-ordering dir"
+Obsolete.  Specified a search directory for CMaps for a character collection.
+.TP
+.BR disableFreeTypeHinting " yes | no"
+Obsolete.  Forced FreeType hinting to be disabled.
+.TP
+.BI displayCIDFontX " registry\-ordering XLFD encoding\-name"
+Obsolete.  Mapped a character collection to an X font for display.
+.TP
+.BI displayFontX " PDF\-font\-name XLFD encoding\-name"
+Obsolete. Mapped a PDF font to an X font for display.
+.TP
+.BI displayNamedCIDFontX " PDF\-font\-name XLFD encoding\-name"
+Obsolete. Mapped a PDF CID font to an X font for display.
+.TP
+.BI drawAnnotations " yes | no"
+Obsolete.  Controlled whether annotations would be drawn or printed.
+.TP
+.BR enableFreeType " yes | no"
+Obsolete.  Controlled whether FreeType was used for font rasterization.
+.TP
+.BR enableT1lib " yes | no"
+Obsolete.  Controlled whether t1lib was used for font rasterization.
+.TP
+.BI enableXFA " yes | no"
+Obsolete.  Controlled whether XFA forms were rendered in place of AcroForms.
+.TP
+.BI fontDir " dir"
+Obsolete.  Specified a search directory for font files.
+.TP
+.BI fontFileCC " registry\-ordering font\-file"
+Obsolete.  Mapped a character collection to a font.
+.TP
+.B fontmap
+Obsolete.  From the configuration file format used before Xpdf 1.0.
+.TP
+.B fontpath
+Obsolete.  From the configuration file format used before Xpdf 1.0.
+.TP
+.BR freetypeControl " none | plain | low | high"
+Obsolete.  Set the type of font rendering for FreeType to use.
+.TP
+.BI mapExtTrueTypeFontsViaUnicode " yes | no"
+Obsolete.  Controlled how character codes were mapped when using external
+TrueType fonts.
+.TP
+.BI mapNumericCharNames " yes | no"
+Obsolete.  Controlled how numeric character names in font subsets were mapped.
+.TP
+.BI mapUnknownCharNames " yes | no"
+Obsolete.  Controlled how unrecognized glyph names were mapped.
+.TP
+.BI minLineWidth " float"
+Obsolete.  Set the minimum line width during rasterization.
+.TP
+.BI nameToUnicode " map\-file"
+Obsolete.  Specified a file with the mapping from character names to Unicode.
+.TP
+.BR psASCIIHex " yes | no"
+Obsolete.  Controlled whether the ASCIIHexEncode filter was be used for binary
+data in PostScript output.
+.TP
+.BR psAlwaysRasterize " yes | no"
+Obsolete.  Controlled whether all PostScript output would be rasterized.
+.TP
+.BR psCenter " yes | no"
+Obsolete.  Controlled whether small PDF pages were centered in PostScript
+output.
+.TP
+.BR psEmbedCIDPostScriptFonts " yes | no"
+Obsolete.  Prevented embedding of CID PostScript fonts in PostScript output.
+.TP
+.BR psEmbedCIDTrueTypeFonts " yes | no"
+Obsolete.  Prevented embedding of CID TrueType fonts in PostScript output.
+.TP
+.BR psEmbedTrueTypeFonts " yes | no"
+Obsolete.  Prevented embedding of TrueType fonts in PostScript output.
+.TP
+.BR psEmbedType1Fonts " yes | no"
+Obsolete.  Prevented embedding of Type 1 fonts in PostScript output.
+.TP
+.BR psFontPassthrough " yes | no"
+Obsolete.  Caused 8-bit font names to be passed through to the PostScript
+output without substitution.
+.TP
+.BR psLZW " yes | no"
+Obsolete.  Controlled whether the LZWEncode filter was used for lossless
+compression in PostScript output.
+.TP
+.BR psMinLineWidth " float"
+Obsolete.  Set the minimum line width for PostScript output.
+.TP
+.BR psOPI " yes | no"
+Obsolete.  Generated PostScript OPI comments for all images and forms which
+have OPI information.
+.TP
+.BR psPreload " yes | no"
+Obsolete.  Controlled whether forms and images were preloaded in PostScript
+output.
+.TP
+.BR psRasterMono " yes | no"
+Obsolete.  Made rasterized pages in PS files monochrome instead of color.
+.TP
+.BR psRasterResolution " float"
+Obsolete.  Set the resolution for rasterized pages in PostScript output.
+.TP
+.BR psRasterSliceSize " pixels"
+Obsolete.  Set the maximum slice size used in rasterized PostScript output.
+.TP
+.BI psResidentFont " PDF\-font\-name PS\-font\-name"
+Obsolete.  Indicated additional printer-resident PostScript fonts.
+.TP
+.BI psResidentFont16 " PDF\-font\-name wMode PS\-font\-name encoding"
+Obsolete.  Indicated additional printer-resident PostScript fonts.
+.TP
+.BI psResidentFontCC " registry\-ordering wMode PS\-font\-name encoding"
+Obsolete.  Indicated additional printer-resident PostScript fonts.
+.TP
+.BR psUncompressPreloadedImages " yes | no"
+Obsolete.  Made all preloaded images in PostScript files uncompressed.
+.TP
+.BR psUseCropBoxAsPage " yes | no"
+Obsolete.  Controlled whether PostScript output treats the CropBox as the page
+size.
+.TP
+.BI screenBlackThreshold " float"
+Obsolete.  Set the black threshold for halftoning.
+.TP
+.BI screenDotRadius " integer"
+Obsolete.  Set the halftone screen dot radius.
+.TP
+.BI screenGamma " float"
+Obsolete.  Set the halftone screen gamma correction parameter.
+.TP
+.BI screenSize " integer"
+Obsolete.  Set the size of the halftone screen threshold matrix.
+.TP
+.BR screenType " dispersed | clustered | stochasticClustered"
+Obsolete.  Set the halftone screen type when generating 1-bit bitmaps.
+.TP
+.BI screenWhiteThreshold " float"
+Obsolete.  Set the white threshold for halftoning.
+.TP
+.BR strokeAdjust " yes | no"
+Obsolete.  Controlled the use of stroke adjustment during antialiasing.
+.TP
+.BR t1libControl " none | plain | low | high"
+Obsolete.  Set the type of font rendering for t1lib to use.
+.TP
+.BR textEOL " unix | dos | mac"
+Obsolete.  Set the end-of-line convention to use for text output.
+.TP
+.BR textKeepTinyChars " yes | no"
+Obsolete.  Controlled whether very small characters were discarded in text
+output.
+.TP
+.BR textPageBreaks " yes | no"
+Obsolete.  Controlled whether page breaks were represented as form feed
+characters in text output.
+.TP
+.BI toUnicodeDir " dir"
+Obsolete.  Specified a search directory for ToUnicode CMaps.
+.TP
+.BI unicodeMap " encoding\-name map\-file"
+Obsolete.  Specified a mapping file from Unicode to a text output encoding.
+.TP
+.BI unicodeToUnicode " font\-name\-substring map\-file"
+Obsolete.  Specified a mapping file to work around PDF fonts which have
+incorrect Unicode information.
+.TP
+.BR vectorAntialias " yes | no"
+Obsolete.  Controlled anti-aliasing of vector graphics during rasterization.
+.SH EXAMPLES
+The following is a sample xpdfrc file.
+.nf
+
+# use the Base-14 Type 1 fonts from ghostscript
+fontFile Times-Roman           /usr/local/share/ghostscript/fonts/n021003l.pfb
+fontFile Times-Italic          /usr/local/share/ghostscript/fonts/n021023l.pfb
+fontFile Times-Bold            /usr/local/share/ghostscript/fonts/n021004l.pfb
+fontFile Times-BoldItalic      /usr/local/share/ghostscript/fonts/n021024l.pfb
+fontFile Helvetica             /usr/local/share/ghostscript/fonts/n019003l.pfb
+fontFile Helvetica-Oblique     /usr/local/share/ghostscript/fonts/n019023l.pfb
+fontFile Helvetica-Bold        /usr/local/share/ghostscript/fonts/n019004l.pfb
+fontFile Helvetica-BoldOblique /usr/local/share/ghostscript/fonts/n019024l.pfb
+fontFile Courier               /usr/local/share/ghostscript/fonts/n022003l.pfb
+fontFile Courier-Oblique       /usr/local/share/ghostscript/fonts/n022023l.pfb
+fontFile Courier-Bold          /usr/local/share/ghostscript/fonts/n022004l.pfb
+fontFile Courier-BoldOblique   /usr/local/share/ghostscript/fonts/n022024l.pfb
+fontFile Symbol                /usr/local/share/ghostscript/fonts/s050000l.pfb
+fontFile ZapfDingbats          /usr/local/share/ghostscript/fonts/d050000l.pfb
+
+# set some PostScript options
+psPaperSize          letter
+psDuplex             no
+psLevel              level2
+psFile               "| lpr \-Pprinter5"
+
+# set the text output options
+textEncoding UTF-8
+
+# misc options
+launchCommand   viewer-script
+urlCommand      "netscape \-remote 'openURL(%s)'"
+
+.fi
+.SH FILES
+.TP
+.B /etc/xpdf/xpdfrc
+This is the default location for the system-wide configuration file.
+Depending on build options, it may be placed elsewhere.
+.TP
+.B $HOME/.xpdfrc
+This is the user's configuration file.  If it exists, it will be read
+in place of the system-wide file.
+.SH AUTHORS
+The original Xpdf software and documentation are copyright 1996\(en2014 Glyph &
+Cog, LLC.  Modifications for Poppler support and further development were done
+by the Debian and Gentoo Xpdf maintainers, and by xpopple contributors.
+.SH "SEE ALSO"
+.ad l
+.BR xpdf (1),
+.BR pdftops (1),
+.BR pdftotext (1),
+.BR pdftohtml (1),
+.BR pdfinfo (1),
+.BR pdffonts (1),
+.BR pdfdetach (1),
+.BR pdftoppm (1),
+.BR pdftopng (1),
+.BR pdfimages (1)
