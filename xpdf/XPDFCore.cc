@@ -241,7 +241,7 @@ void XPDFCore::resizeToPage(int pg) {
 
   displayW = DisplayWidth(display, screenNum);
   displayH = DisplayHeight(display, screenNum);
-  if (fullScreen) {
+  if (0) {
     width = displayW;
     height = displayH;
   } else {

@@ -1503,7 +1503,7 @@ void XPDFViewer::initWindow(bool fullScreen) {
 
   initPopupMenu();
 
-  if (fullScreen) {
+  if (0) {
     // Set both the old-style Motif decorations hint and the new-style
     // _NET_WM_STATE property.  This is redundant, but might be useful
     // for older window managers.  We also set the geometry to +0+0 to

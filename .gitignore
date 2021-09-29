@@ -12,3 +12,4 @@ missing
 *.o
 tags
 .*
+*.diff
