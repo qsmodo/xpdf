@@ -2760,11 +2760,11 @@ void XPDFViewer::initAboutDialog() {
 
   //----- fonts
   aboutBigFont =
-    createFontList("-*-times-bold-i-normal--20-*-*-*-*-*-iso8859-1");
+    createFontList("-*-times-bold-i-normal--20-*-*-*-*-*-iso10646-1");
   aboutVersionFont =
-    createFontList("-*-times-medium-r-normal--16-*-*-*-*-*-iso8859-1");
+    createFontList("-*-times-medium-r-normal--16-*-*-*-*-*-iso10646-1");
   aboutFixedFont =
-    createFontList("-*-courier-medium-r-normal--12-*-*-*-*-*-iso8859-1");
+    createFontList("-*-courier-medium-r-normal--12-*-*-*-*-*-iso10646-1");
 
   //----- heading
   n = 0;

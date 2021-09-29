@@ -31,9 +31,9 @@
 //------------------------------------------------------------------------
 
 static String fallbackResources[] = {
-  "*.zoomComboBox*FontList: -*-helvetica-medium-r-normal--12-*-*-*-*-*-iso8859-1",
-  "*XmTextField.FontList: -*-courier-medium-r-normal--12-*-*-*-*-*-iso8859-1",
-  "*.FontList: -*-helvetica-medium-r-normal--12-*-*-*-*-*-iso8859-1",
+  "*.zoomComboBox*FontList: -*-helvetica-medium-r-normal--12-*-*-*-*-*-iso10646-1",
+  "*XmTextField.FontList: -*-courier-medium-r-normal--12-*-*-*-*-*-iso10646-1",
+  "*.FontList: -*-helvetica-medium-r-normal--12-*-*-*-*-*-iso10646-1",
   "*XmTextField.translations: #override\\n"
   "  Ctrl<Key>a:beginning-of-line()\\n"
   "  Ctrl<Key>b:backward-character()\\n"
@@ -121,6 +121,7 @@ static int xErrorHandler(Display *display, XErrorEvent *ev) {
 #endif
 
 XPDFApp::XPDFApp(int *argc, char *argv[]) {
+  XtSetLanguageProc(NULL, NULL, NULL);
   appShell = XtAppInitialize(&appContext, xpdfAppName, xOpts, nXOpts,
 			     argc, argv, fallbackResources, NULL, 0);
   display = XtDisplay(appShell);

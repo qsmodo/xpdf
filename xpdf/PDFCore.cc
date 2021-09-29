@@ -12,6 +12,7 @@
 
 #include <math.h>
 #include <memory>
+#include <stdlib.h>
 #include <goo/GooString.h>
 #include "GlobalParams.h"
 #include "XPDFParams.h"
@@ -1650,16 +1651,21 @@ GooString *PDFCore::extractText(int pg, double xMin, double yMin,
 
 bool PDFCore::find(const char *s, bool caseSensitive, bool next, bool backward,
 		   bool wholeWord, bool onePageOnly) {
+  wchar_t *wbuf;
   Unicode *u;
   int len, i;
   bool ret;
 
-  // convert to Unicode
-  len = (int)strlen(s);
+  // Convert from the current locale's encoding to Unicode.
+  // (Poppler's Unicode type is not necessarily the same as wchar_t!)
+  len = (int)mbstowcs(NULL, s, 0);
+  wbuf = (wchar_t *)gmallocn(len + 1, sizeof(wchar_t));
+  mbstowcs(wbuf, s, len + 1);
   u = (Unicode *)gmallocn(len, sizeof(Unicode));
   for (i = 0; i < len; ++i) {
-    u[i] = (Unicode)(s[i] & 0xff);
+    u[i] = (Unicode)wbuf[i];
   }
+  gfree(wbuf);
 
   ret = findU(u, len, caseSensitive, next, backward, wholeWord, onePageOnly);
 
