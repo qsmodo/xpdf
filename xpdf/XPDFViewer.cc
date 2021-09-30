@@ -786,11 +786,11 @@ void XPDFViewer::cmdFind(const CmdList& args, XEvent *event) {
 }
 
 void XPDFViewer::cmdFindPrev(const CmdList& args, XEvent *event) {
-  doFind(true, 1);
+  doFind(true, true);
 }
 
 void XPDFViewer::cmdFindNext(const CmdList& args, XEvent *event) {
-  doFind(true, 0);
+  doFind(true, false);
 }
 
 void XPDFViewer::cmdFocusToDocWin(const CmdList& args, XEvent *event) {
@@ -2900,7 +2900,7 @@ void XPDFViewer::openOkCbk(Widget widget, XtPointer ptr,
 //------------------------------------------------------------------------
 
 void XPDFViewer::initFindDialog() {
-  Widget form1, label, okBtn, closeBtn;
+  Widget form1, label, closeBtn, findShortcutHint;
   Arg args[20];
   int n;
   XmString s;
@@ -2914,36 +2914,17 @@ void XPDFViewer::initFindDialog() {
   findDialog = XmCreateFormDialog(win, "findDialog", args, n);
   XmStringFree(s);
 
-  //----- "find" and "close" buttons
-  n = 0;
-  XtSetArg(args[n], XmNtraversalOn, false); ++n;
-  XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNleftOffset, 4); ++n;
-  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNbottomOffset, 4); ++n;
-  XtSetArg(args[n], XmNnavigationType, XmEXCLUSIVE_TAB_GROUP); ++n;
-  okBtn = XmCreatePushButton(findDialog, "Find", args, n);
-  XtManageChild(okBtn);
-  XtAddCallback(okBtn, XmNactivateCallback,
-		&findFindCbk, (XtPointer)this);
-  n = 0;
-  XtSetArg(args[n], XmNtraversalOn, false); ++n;
-  XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNrightOffset, 4); ++n;
-  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_FORM); ++n;
-  XtSetArg(args[n], XmNbottomOffset, 4); ++n;
+  /* For some obscure reason removing these lines causes the case widget to
+   * receive initial focus, even though it is explictly set otherwise below. */
   XtSetArg(args[n], XmNnavigationType, XmEXCLUSIVE_TAB_GROUP); ++n;
   closeBtn = XmCreatePushButton(findDialog, "Close", args, n);
-  XtManageChild(closeBtn);
-  XtAddCallback(closeBtn, XmNactivateCallback,
-		&findCloseCbk, (XtPointer)this);
 
   //----- case sensitiveness checkbox
   n = 0;
   XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNleftOffset, 2); ++n;
-  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNbottomWidget, okBtn); ++n;
+  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_FORM); ++n;
+  XtSetArg(args[n], XmNbottomOffset, 4); ++n;
   XtSetArg(args[n], XmNindicatorType, XmN_OF_MANY); ++n;
 #if XmVERSION <= 1
   XtSetArg(args[n], XmNindicatorOn, True); ++n;
@@ -2958,12 +2939,28 @@ void XPDFViewer::initFindDialog() {
   XmStringFree(s);
   XtManageChild(findCaseSensitiveToggle);
 
+  //----- label for Shift+Return shortcut
+  n = 0;
+  XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
+  XtSetArg(args[n], XmNleftOffset, 2); ++n;
+  XtSetArg(args[n], XmNrightOffset, 2); ++n;
+  XtSetArg(args[n], XmNmarginTop, 4); ++n;
+  XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
+  XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
+  XtSetArg(args[n], XmNbottomWidget, findCaseSensitiveToggle); ++n;
+  XtSetArg(args[n], XmNalignment, XmALIGNMENT_CENTER); ++n;
+  s = XmStringCreateLocalized("(Shift+Enter for backwards search)");
+  XtSetArg(args[n], XmNlabelString, s); ++n;
+  findShortcutHint = XmCreateLabel(findDialog, "back-shortcut", args, n);
+  XmStringFree(s);
+  XtManageChild(findShortcutHint);
+
   //----- search string entry
   n = 0;
   XtSetArg(args[n], XmNtopAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNtopOffset, 4); ++n;
   XtSetArg(args[n], XmNbottomAttachment, XmATTACH_WIDGET); ++n;
-  XtSetArg(args[n], XmNbottomWidget, findCaseSensitiveToggle); ++n;
+  XtSetArg(args[n], XmNbottomWidget, findShortcutHint); ++n;
   XtSetArg(args[n], XmNleftAttachment, XmATTACH_FORM); ++n;
   XtSetArg(args[n], XmNleftOffset, 2); ++n;
   XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
@@ -2987,18 +2984,16 @@ void XPDFViewer::initFindDialog() {
   XtSetArg(args[n], XmNrightAttachment, XmATTACH_FORM); ++n;
   findText = XmCreateTextField(form1, "text", args, n);
   XtManageChild(findText);
-#ifdef LESSTIF_VERSION
-  XtAddCallback(findText, XmNactivateCallback,
-		&findFindCbk, (XtPointer)this);
-#endif
+  // This subverts the unused help callback so that it does a backward search.
+  XtOverrideTranslations(findText,
+			 XtParseTranslationTable("Shift<Key>Return:Help()")
+  );
+  XtAddCallback(findText, XmNhelpCallback, &findBackFindCbk, (XtPointer)this);
+  XtAddCallback(findText, XmNactivateCallback, &findFindCbk, (XtPointer)this);
 
   //----- dialog parameters
   n = 0;
-  XtSetArg(args[n], XmNdefaultButton, okBtn); ++n;
-  XtSetArg(args[n], XmNcancelButton, closeBtn); ++n;
-#if XmVersion > 1001
   XtSetArg(args[n], XmNinitialFocus, findText); ++n;
-#endif
   XtSetValues(findDialog, args, n);
 }
 
@@ -3006,7 +3001,14 @@ void XPDFViewer::findFindCbk(Widget widget, XtPointer ptr,
 			     XtPointer callData) {
   XPDFViewer *viewer = (XPDFViewer *)ptr;
 
-  viewer->doFind(false, 0);
+  viewer->doFind(false, false);
+  XtUnmanageChild(viewer->findDialog);
+}
+void XPDFViewer::findBackFindCbk(Widget widget, XtPointer ptr,
+			     XtPointer callData) {
+  XPDFViewer *viewer = (XPDFViewer *)ptr;
+
+  viewer->doFind(false, true);
   XtUnmanageChild(viewer->findDialog);
 }
 
@@ -3017,7 +3019,7 @@ void XPDFViewer::mapFindDialog() {
   XtManageChild(findDialog);
 }
 
-void XPDFViewer::doFind(bool next, int backward) {
+void XPDFViewer::doFind(bool next, bool backward) {
   if (XtWindow(findDialog)) {
     XDefineCursor(display, XtWindow(findDialog), core->getBusyCursor());
   }

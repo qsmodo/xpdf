@@ -284,8 +284,10 @@ private:
   void initFindDialog();
   static void findFindCbk(Widget widget, XtPointer ptr,
 			  XtPointer callData);
+  static void findBackFindCbk(Widget widget, XtPointer ptr,
+			      XtPointer callData);
   void mapFindDialog();
-  void doFind(bool next, int backward);
+  void doFind(bool next, bool backward);
   static void findCloseCbk(Widget widget, XtPointer ptr,
 			   XtPointer callData);
 
