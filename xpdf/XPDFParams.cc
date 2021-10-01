@@ -293,6 +293,8 @@ void XPDFParams::createDefaultKeyBindings() {
                            xpdfKeyContextAny, "focusToPageNum");
   keyBindings.emplace_back('G', xpdfKeyModNone,
                            xpdfKeyContextAny, "focusToPageNum");
+  keyBindings.emplace_back('Z', xpdfKeyModNone,
+                           xpdfKeyContextAny, "focusToZoom");
   keyBindings.emplace_back('0', xpdfKeyModNone,
                            xpdfKeyContextAny, "zoomPercent(125)");
   keyBindings.emplace_back('+', xpdfKeyModNone,
@@ -300,8 +302,6 @@ void XPDFParams::createDefaultKeyBindings() {
   keyBindings.emplace_back('-', xpdfKeyModNone,
                            xpdfKeyContextAny, "zoomOut");
   keyBindings.emplace_back('z', xpdfKeyModNone,
-                           xpdfKeyContextAny, "zoomFitPage");
-  keyBindings.emplace_back('Z', xpdfKeyModNone,
                            xpdfKeyContextAny, "zoomFitPage");
   keyBindings.emplace_back('h', xpdfKeyModNone,
                            xpdfKeyContextAny, "zoomFitHeight");

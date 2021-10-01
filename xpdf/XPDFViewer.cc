@@ -176,6 +176,7 @@ XPDFViewerCmd XPDFViewer::cmdTab[] = {
   { "findPrev",                0, true,  false, &XPDFViewer::cmdFindPrev },
   { "focusToDocWin",           0, false, false, &XPDFViewer::cmdFocusToDocWin },
   { "focusToPageNum",          0, false, false, &XPDFViewer::cmdFocusToPageNum },
+  { "focusToZoom",             0, false, false, &XPDFViewer::cmdFocusToZoom },
   { "followLink",              0, true,  true,  &XPDFViewer::cmdFollowLink },
   { "followLinkInNewWin",      0, true,  true,  &XPDFViewer::cmdFollowLinkInNewWin },
   { "followLinkInNewWinNoSel", 0, true,  true,  &XPDFViewer::cmdFollowLinkInNewWinNoSel },
@@ -795,6 +796,24 @@ void XPDFViewer::cmdFindNext(const CmdList& args, XEvent *event) {
 
 void XPDFViewer::cmdFocusToDocWin(const CmdList& args, XEvent *event) {
   core->takeFocus();
+}
+
+void XPDFViewer::cmdFocusToZoom(const CmdList& args, XEvent *event) {
+  if (toolBar == None) {
+    return;
+  }
+  Cardinal n, i;
+  WidgetList children;
+  XtVaGetValues(zoomComboBox, XmNnumChildren, &n, XmNchildren, &children, NULL);
+  for (i = 0; i < n; ++i) {
+    if (!strcmp(XtName(children[i]), "Text")) {
+      break;
+    }
+  }
+  XmTextFieldSetSelection(children[i], 0,
+			  strlen(XmTextFieldGetString(children[i])),
+			  XtLastTimestampProcessed(display));
+  XmProcessTraversal(children[i], XmTRAVERSE_CURRENT);
 }
 
 void XPDFViewer::cmdFocusToPageNum(const CmdList& args, XEvent *event) {

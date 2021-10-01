@@ -437,6 +437,9 @@ Zoom in (increment the zoom factor by 1).
 .B -
 Zoom out (decrement the zoom factor by 1).
 .TP
+.B Z
+Activate the zoom number text field.
+.TP
 .B z
 Set the zoom factor to 'page' (fit page to window).
 .TP
@@ -746,6 +749,9 @@ Set the keyboard focus to the main document window.
 .B focusToPageNum
 Set the keyboard focus to the page number text box.
 .TP
+.B focusToZoom
+Set the keyboard focus to the zoom number text box.
+.TP
 .B find
 Open the 'find' dialog.
 .TP
@@ -865,7 +871,7 @@ The default key bindings are as follows:
     bind +              any         zoomIn
     bind -              any         zoomOut
     bind z              any         zoomFitPage
-    bind Z              any         zoomFitPage
+    bind Z              any         focusToZoom
     bind w              any         zoomFitWidth
     bind W              any         zoomFitWidth
     bind h              any         zoomFitHeight

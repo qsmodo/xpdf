@@ -127,6 +127,7 @@ private:
   void cmdFindPrev(const CmdList& args, XEvent *event);
   void cmdFocusToDocWin(const CmdList& args, XEvent *event);
   void cmdFocusToPageNum(const CmdList& args, XEvent *event);
+  void cmdFocusToZoom(const CmdList& args, XEvent *event);
   void cmdFollowLink(const CmdList& args, XEvent *event);
   void cmdFollowLinkInNewWin(const CmdList& args, XEvent *event);
   void cmdFollowLinkInNewWinNoSel(const CmdList& args, XEvent *event);
